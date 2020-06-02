@@ -1,0 +1,19 @@
+# .gitignore
+__pycache__
+venv
+etc/config.ini
+
+# distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
