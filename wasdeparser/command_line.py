@@ -13,7 +13,7 @@ def main():
 		type=str,
 		help="Path to output excel file")
 	parser.add_argument('-d',
-		metavar="input_directory",
+		"--input_directory",
 		type=str,
 		help="Directory of WASDE files")
 
