@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+
+import pathlib
+from setuptools import setup
+
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
 
@@ -34,6 +39,7 @@ setup(name='wasdeparser',
 		entry_points = {
 
 			'console_scripts': [
+				'wasdeparse=wasdeparser.command_line:main'
 				]
 			}
 		)
