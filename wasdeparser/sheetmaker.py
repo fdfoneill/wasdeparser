@@ -27,6 +27,7 @@ class Sheetmaker:
 
 	"""
 
+
 	def __init__(self):
 
 		self.crop_regions = {
@@ -72,9 +73,9 @@ class Sheetmaker:
 
 		
 		name,ext = os.path.splitext(file_path)
-		# get date from filename
-		junk, month, day, year = name.split("-")
-		date = f"{month}/{day}/{year}"
+		# # get date from filename
+		# junk, month, day, year = name.split("-")
+		# date = f"{month}/{day}/{year}"
 
 		# case based on filetype
 		if ext in ['.xls','.xlsx']:
@@ -84,7 +85,7 @@ class Sheetmaker:
 
 		# absorb data
 		for crop in parser.data.keys():
-			self.data[crop].append({"date":date,"season":parser.season,"data":parser.data[crop]})
+			self.data[crop].append({"date":parser.date,"season":parser.season,"data":parser.data[crop]})
 
 
 	def write(self,out_file,file_format="EXCEL")->str:
