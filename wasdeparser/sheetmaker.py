@@ -113,15 +113,16 @@ class Sheetmaker:
 				row = 0
 				for report in self.data[crop]:
 					for i in report['data'].index:
-						row = row+1
-						sheet.write(row,0,report['date'])
-						sheet.write(row,1,report['season'])
-						sheet.write(row,2,crop)
-						sheet.write(row,3,report['data']['Category'][i])
-						col = 4
-						for region in self.crop_regions[crop]:
-							sheet.write(row,col,report['data'][region][i])
-							col+= 1
+						if report['data']['Category'][i] in self.categories:
+							row = row+1
+							sheet.write(row,0,report['date'])
+							sheet.write(row,1,report['season'])
+							sheet.write(row,2,crop)
+							sheet.write(row,3,report['data']['Category'][i])
+							col = 4
+							for region in self.crop_regions[crop]:
+								sheet.write(row,col,report['data'][region][i])
+								col+= 1
 			wrkbk.close()
 
 		elif file_format == "CSV":

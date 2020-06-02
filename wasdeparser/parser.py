@@ -5,6 +5,7 @@ log = logging.getLogger(__name__)
 
 import re, xlrd
 import pandas as pd
+from datetime import datetime
 
 
 
@@ -119,7 +120,7 @@ class Parser:
 		header_row = self.getHeaderRow_xl(sheet)
 		label_column = self.getStartColumn_xl(sheet)
 		date_raw = sheet.cell(0,0).value.strip()
-		self.date = datetime.strptime(date_raw,"%b %Y").strftime("%m/%d/%Y")
+		self.date = datetime.strptime(date_raw,"%B %Y").strftime("%m/%d/%Y")
 		self.season = sheet.cell(header_row,label_column).value.strip().split()[0]
 		start_column = label_column+2
 		rownames = {} # dictionary of rowname:row
