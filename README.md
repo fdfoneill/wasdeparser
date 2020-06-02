@@ -1,10 +1,10 @@
 # wasdeparser
 
-`wasdeparser` is a Python package that facilitates access to and use of data from the USDA World Agricultural Supply and Demand Estimates.
+`wasdeparser` is a Python package that facilitates access to and use of data from the [USDA](https://www.usda.gov/) World Agricultural Supply and Demand Estimates.
 
 # Motivation
 
-The USDA makes their data freely available online, but the format in which those data are promulgated does not lend itself to easy between-year analysis or multi-year display. This package is intended to streamline the acquisition and 'cleaning' of multiple years' worth of data, into a format more suitable for analysis and display. 
+The USDA makes their data freely available [online](https://usda.library.cornell.edu/concern/publications/3t945q76s?locale=en&page=13#release-items), but the format in which those data are promulgated does not lend itself to easy between-year analysis or multi-year display. This package is intended to streamline the acquisition and 'cleaning' of multiple years' worth of data, outputting them in a format more suitable for analysis and display. 
 
 # Features
 

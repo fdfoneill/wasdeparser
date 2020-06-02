@@ -19,7 +19,10 @@ setup(name='wasdeparser',
 		include_package_data=True,
 		# third-party dependencies
 		install_requires=[
+			'pandas',
 			'requests',
+			'xlrd',
+			'XlsxWriter'
 			],
 		# tests
 		test_suite='nose.collector',
