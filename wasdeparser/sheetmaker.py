@@ -44,7 +44,7 @@ class Sheetmaker:
 
 		self.categories = [
 			"Production",
-			"Consumption",
+			"Domestic Total",
 			"Exports",
 			"Ending Stocks"
 		]
