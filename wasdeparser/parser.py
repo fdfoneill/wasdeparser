@@ -57,7 +57,7 @@ class Parser:
 				log.error("Argument 'file_format' must be one of: ['TEXT','EXCEL']")
 				self.source_file = None
 		except:
-			log.exception("Failed to parse")
+			log.exception(f"Failed to parse {input_file}")
 			self.source_file = None
 			self.data = None
 
@@ -119,7 +119,7 @@ class Parser:
 		sheet = wrkbk.sheet_by_name(page_name)
 		header_row = self.getHeaderRow_xl(sheet)
 		label_column = self.getStartColumn_xl(sheet)
-		date_raw = sheet.cell(0,0).value.strip()
+		date_raw = sheet.cell(*self.getDateCell_xl(sheet)).value.strip()
 		self.date = datetime.strptime(date_raw,"%B %Y").strftime("%m/%d/%Y")
 		self.season = sheet.cell(header_row,label_column).value.strip().split()[0]
 		start_column = label_column+2
@@ -162,6 +162,14 @@ class Parser:
 			return True
 		except:
 			return False
+
+
+	def getDateCell_xl(self,sheet) -> tuple:
+		"""Returns first cell with data, hopefully containing report date"""
+		for y in range(sheet.nrows):
+			for x in range(sheet.ncols):
+				if sheet.cell(y,x).value != "":
+					return (y,x)
 
 
 	def getHeaderRow_xl(self,sheet) -> int:
