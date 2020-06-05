@@ -9,18 +9,27 @@ The USDA makes their data [freely available online](https://usda.library.cornell
 # Features
 
 * Download and clean multiple years of WASDE data with a single line of code
-* Choose which variables to extract
-* Create analysis-ready Excel or CSV files
+* Choose which variables to extract (coming soon!)
+* Create analysis-ready Excel files
 
 # Code Example
 
 ```
-COMING SOON
+# command line
+wasdeparse C:/temp/output_file.xlsx -d C:/input_data_files
 ```
 
 # How to Use
 
-COMING SOON
+The main interface with the `wasdeparser` module is through the `wasdeparse` command-line script. This script takes two arguments: a filepath for the output excel file, and the path to a directory of WASDE files (excel or text) downloaded from the [Cornell portal](https://usda.library.cornell.edu/concern/publications/3t945q76s?locale=en&page=13#release-items).
+
+The script reads and parses each file in the input directory, extracting certain variables. By default, those variables are:
+
+* Production
+* Domestic Total
+* Ending Stocks
+
+for wheat and corn. Wheat statistics are generated for the world, United States, and Russia, while corn statistics are generated for the world and United States. Future releases of `wasdeparser` will allow the user to specify custom crops, variables, and regions to include in the output file.
 
 # License
 MIT License
