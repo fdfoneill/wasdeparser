@@ -39,4 +39,5 @@ class Downloader:
 			Desired file format. One of
 			TEXT or EXCEL
 		"""
+		log.warning("Downloading not implemented")
 		pass
