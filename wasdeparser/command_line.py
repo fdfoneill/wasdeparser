@@ -22,5 +22,9 @@ def main():
 	files = glob.glob(os.path.join(args.input_directory,"*"))
 	maker = Sheetmaker()
 	for f in files:
-		maker.read(f)
+		log.debug(f"Reading file: {os.path.basename(f)}")
+		try:
+			maker.read(f)
+		except:
+			log.exception(f"Failed to read {f}")
 	maker.write(args.out_file)

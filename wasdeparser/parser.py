@@ -62,14 +62,25 @@ class Parser:
 			self.data = None
 
 
+	### TEXT ###
+
+
 	def parsetext(self,input_file) -> dict:
 		"""Parser for text files, returns parsed dict"""
-		log.warning("Parsing for text files not implemented")
-		return None
 
 		# read file
 		with open(input_file,'r') as rf:
 			lines = [l.strip("\n") for l in rf.readlines()]
+
+		try:
+			junk,month,day,year = os.path.splitext(os.path.basename(input_file))[0].split()[0].split("_")[0].split("-")
+			self.date = datetime.strptime(f"{month}-{day}-{year}","%m-%d-%Y").strftime("%m/%d/%Y")
+		except: # new ones have it in the file itself
+			try:
+				date_raw = lines[0].split()[-2] + " " + lines[0].split()[-1]
+				self.date = datetime.strptime(date_raw,"%B %Y").strftime("%m/%d/%Y")
+			except:
+				pass
 
 		# split into pages
 		pages = {} # dictionary of lists
@@ -79,11 +90,10 @@ class Parser:
 			while not self.isPageHeader_txt(lines[lineIndex]):
 				lineIndex += 1
 		except IndexError:
-			log.error(f"No page header matches. Index = {lineIndex}")
+			log.warning(f"No page header matches in {input_file}. Index = {lineIndex}")
 		## add pages to dict
 		while lineIndex < len(lines):
 			pageNumber = [p.strip().split()[0] for p in lines[lineIndex].strip().split("-")][2]
-			log.info(pageNumber)
 			lineIndex += 1
 			pageData = []
 			while lineIndex < len(lines):
@@ -93,8 +103,169 @@ class Parser:
 				lineIndex+= 1
 			pages[pageNumber] = pageData
 
+		out_data = {}
+		# find wheat and corn pages by title
+		for pageNumber in pages.keys():
+			pageTitle = self.getTitleLine_txt(pages[pageNumber])
+			if pageTitle == None:
+				continue
+			if pageTitle.lower() == "world wheat supply and use" and self.hasProj_txt(pages[pageNumber]):
+				out_data['Wheat'] = self.parsePage_txt(pages,pageNumber,'Wheat')
+			elif pageTitle.lower() == "world corn supply and use" and self.hasProj_txt(pages[pageNumber]):
+				out_data['Corn'] = self.parsePage_txt(pages,pageNumber,'Corn')
+
 		# parse each page
-		return pages
+		return out_data
+
+
+	def isPageHeader_txt(self,line) -> bool:
+		"""Tests whether line matches page header syntax
+		Returns True if line is of the form 'WASDE-*-#',
+		else false.
+		"""
+		try:
+			parts = [p.strip().split()[0] for p in line.strip().split("-")] # get just ["WASDE","<<report no>>","<<page no>>"]
+			if parts[0] != "WASDE":
+				return False
+			if len(parts) != 3:
+				return False
+			assert int(parts[1])
+			assert int(parts[2])
+			return True
+		except:
+			return False
+
+
+	def getTitleLine_txt(self,page) -> str:
+		"""given list of lines, returns titleline as string"""
+		for line in page:
+			if len(line.strip()) > 0:
+				title_line = line.strip()
+				break
+		# clean title line of '1/ (cont.)'
+		for i in range(len(title_line)):
+			try:
+				int(title_line[i])
+				title_line = title_line[:i]
+				return title_line.strip()
+			except ValueError:
+				continue
+
+
+	def getDataHeaders_txt(self,page) -> list:
+		"""Dummy function for now, just returns expected headers"""
+		return ["Beginning stocks","Production","Imports","Domestic Feed","Domestic Total","Exports","Ending Stocks"]
+
+
+	def parseDataLine_txt(self,line)->list:
+		"""Returns list of data values in text file line"""
+		if ":" in line:
+			parts = line.split(":")[1].split()
+		else:
+			parts = line.split()
+			parts = parts[1:]
+		return [p.strip() for p in parts if p.strip() != ":"]
+
+
+	def parsePage_txt(self,page_data,page_number,page_crop) -> pd.DataFrame:
+		"""Turn list of page lines into a pandas dataframe"""
+		page = page_data[page_number]
+		y = 0
+		colnames = self.getDataHeaders_txt(page)
+		#colnames = {dataHeaders[i]:i for i in range(len(dataHeaders))}
+		#ownames = {}
+		rownames = []
+		dashRows = 0
+		# skip to just below second row of equals signs
+		while dashRows < 2:
+			if len(page[y].strip()) == 0:
+				y += 1
+				continue
+			elif page[y][0] == '=':
+				dashRows += 1
+				y += 1
+			else:
+				y += 1
+		# skip to first row name
+		while True:
+			line = page[y]
+			if len(line.strip().strip(":").strip()) == 0:
+				y += 1
+				continue
+			if not self.couldBeData(self.cleanSlashes(line)):
+				break
+			# if neither of those, probably the season row...
+			line = line.strip().strip(":").strip().strip("Proj.").strip("(Projected)").strip()
+			self.season = line
+
+			y += 1
+		# read data directly from the table (and get the row names as we go!)
+		rawData = []
+		while y < len(page):
+			line = page[y]
+			# skip blank lines
+			if len(line.strip().strip(":").strip()) == 0:
+				y+=1
+				continue
+			# skip the dreaded "Selected Other"
+			if "Selected Other".lower() in line.lower():
+				y += 1
+				continue
+			# break if you've reached the last line (which is all ======'s)
+			if line[0] == "=":
+				break
+			# do stuff if it's a region name
+			# if not self.couldBeData(self.cleanSlashes(line)): # it's a normal region name
+			# 	if not self.couldBeData(self.cleanSlashes(page[y+2])):
+			# 		y += 1
+			# 	else:
+			# 		y += 2
+			# 	rownames.append(self.cleanSlashes(line))
+			# 	continue
+			# if len(line.split(":")) > 1 and len(line.split(":")[0].split()) > 1: #it's a stupid one-line regionname+data
+			# 	rownames.append(self.cleanSlashes(line.split(":")[0][:-4].strip()))
+			if self.hasRowName(line):
+				rownames.append(self.cleanSlashes(self.cleanRowName(line)))
+				if self.cleanSlashes(self.cleanRowName(line)).endswith('4'):
+					print(line)
+				if self.couldBeData(line): # it's a rowname+data line
+					if self.hasRowName(page[y+1]): # check whether the next row has a rowname
+						rawData.append(self.parseDataLine_txt(line)) # if it doesn't, add this row's data
+					y += 1
+				elif self.hasRowName(page[y+2]):
+					y += 1
+				else:
+					y += 2
+				continue
+
+			rawData.append(self.parseDataLine_txt(line))
+			y += 1
+		## housekeeping
+		# print(rownames)
+		# print(colnames)
+		# for row in rawData:
+		# 	print(row)
+		# reshape data into dataframe-friendliness
+		page_headers = ["Crop","Category"] + [self.cleanSlashes(region) for region in rownames]
+		page_data = []
+		for x in range(len(colnames)):
+			variable = self.cleanSlashes(colnames[x])
+			line = [page_crop,variable]
+			for y in range(len(rownames)):
+				region = self.cleanSlashes(rownames[y])
+				line.append(rawData[y][x])
+			page_data.append(line)
+		return pd.DataFrame(page_data,columns=page_headers,index=[i for i in range(len(page_data))])
+
+
+	def hasProj_txt(self,page)->bool:
+		"""returns whether any line contains string 'Proj'"""
+		for line in page:
+			if "Proj" in line:
+				return True
+		return False
+
+	### EXCEL ###
 
 
 	def parsexl(self,input_file) -> dict:
@@ -146,24 +317,6 @@ class Parser:
 		return pd.DataFrame(page_data,columns=page_headers,index=[i for i in range(len(page_data))])
 
 
-	def isPageHeader_txt(self,line) -> bool:
-		"""Tests whether line matches page header syntax
-		Returns True if line is of the form 'WASDE-*-#',
-		else false.
-		"""
-		try:
-			parts = [p.strip().split()[0] for p in line.strip().split("-")] # get just ["WASDE","<<report no>>","<<page no>>"]
-			if parts[0] != "WASDE":
-				return False
-			if len(parts) != 3:
-				return False
-			assert int(parts[1])
-			assert int(parts[2])
-			return True
-		except:
-			return False
-
-
 	def getDateCell_xl(self,sheet) -> tuple:
 		"""Returns first cell with data, hopefully containing report date"""
 		for y in range(sheet.nrows):
@@ -195,9 +348,43 @@ class Parser:
 		return -1
 
 
+	### GENERAL ###
+
+
 	def cleanSlashes(self,in_string) -> str:
 		"""removes weird '1/, 2/ 3/' from the ends of strings"""
-		in_string = in_string.strip()
-		for i in range(1,10):
-			in_string = in_string.strip(f"{i}/").strip()
+		in_string = in_string.strip().strip(":").strip()
+		while in_string.endswith("/"):
+			in_string = in_string[:-2].strip()
 		return in_string
+
+	def couldBeData(self,in_string) -> bool:
+		"""returns whether a string has any numerical digits in it"""
+		in_string = self.cleanSlashes(in_string)
+		if len(in_string.strip()) == 0:
+			return False
+		digits= any(char.isdigit() for char in in_string)
+		nas = "NA" in in_string
+		return (digits or nas)
+
+	def hasRowName(self,in_string) -> bool:
+		in_string = self.cleanSlashes(in_string)
+		if len(in_string.strip()) == 0:
+			return False
+		digits= any(char.isdigit() for char in in_string)
+		nas = "NA" in in_string
+		if digits or nas:
+			parts = in_string.split(":")
+			if len(parts) < 2:
+				return False
+			if len(parts[0].split()) < 2:
+				return False
+			return True
+		return True
+
+	def cleanRowName(self,in_string):
+		digits= any(char.isdigit() for char in self.cleanSlashes(in_string))
+		nas = "NA" in in_string
+		if digits or nas:
+			return self.cleanSlashes(in_string.split(":")[0][:-4].strip())
+		return self.cleanSlashes(in_string.strip()).strip()

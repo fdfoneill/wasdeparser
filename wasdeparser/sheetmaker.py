@@ -83,7 +83,16 @@ class Sheetmaker:
 		elif ext == ".txt":
 			parser.parse(file_path,"TEXT")
 
+		# check for date and season
+		if parser.date is None:
+			log.warning(f"Missing date in {file_path}")
+		if parser.season is None:
+			log.warning(f"Missing season in {file_path}")
+
 		# absorb data
+		if parser.data == None:
+			log.warning("Parser holds no data")
+			return None
 		for crop in parser.data.keys():
 			self.data[crop].append({"date":parser.date,"season":parser.season,"data":parser.data[crop]})
 
